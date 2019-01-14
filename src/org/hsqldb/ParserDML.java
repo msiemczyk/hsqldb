@@ -1269,6 +1269,13 @@ public class ParserDML extends ParserDQL {
                 readThis(Tokens.SET);
                 readSetClauseList(targetRangeVars, updateTargetSet,
                                   updateColIndexList, updateExpressions);
+                
+                if (readIfThis(Tokens.WHERE)) {
+                    Expression whereCondition = XreadBooleanValueExpression();
+
+                    // FIXME: not sure what to really do with this.
+                    //e.setCondition(condition);
+                }
             } else {
                 if (conditions[2] != null) {
                     throw Error.error(ErrorCode.X_42547);

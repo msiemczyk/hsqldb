@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2017, The HSQL Development Group
+/* Copyright (c) 2001-2019, The HSQL Development Group
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-
 package org.hsqldb.types;
 
 import org.hsqldb.HsqlNameManager.HsqlName;
@@ -191,6 +189,7 @@ public abstract class Type implements SchemaObject, Cloneable {
      */
     public abstract String getJDBCClassName();
 
+    @SuppressWarnings("rawtypes")
     public abstract Class getJDBCClass();
 
     public int getJDBCScale() {
@@ -688,6 +687,8 @@ public abstract class Type implements SchemaObject, Cloneable {
 
     // other type
     public static final OtherType OTHER = OtherType.getOtherType();
+    
+    public static final UDTType UDT = UDTType.getUdtType();
 
     // boolean type
     public static final BooleanType SQL_BOOLEAN = BooleanType.getBooleanType();
@@ -956,6 +957,9 @@ public abstract class Type implements SchemaObject, Cloneable {
             case Types.SQL_INTERVAL_SECOND :
                 return SQL_INTERVAL_SECOND;
 
+            case Types.SQL_UDT :
+                return UDT;
+                    
             case Types.OTHER :
                 return OTHER;
 
@@ -1133,6 +1137,9 @@ public abstract class Type implements SchemaObject, Cloneable {
             case Types.SQL_INTERVAL_MINUTE_TO_SECOND :
             case Types.SQL_INTERVAL_SECOND :
                 return IntervalType.getIntervalType(type, precision, scale);
+                
+            case Types.SQL_UDT :
+                return UDT; 
 
             case Types.OTHER :
                 return OTHER;
@@ -1235,7 +1242,7 @@ public abstract class Type implements SchemaObject, Cloneable {
         if (i == Integer.MIN_VALUE) {
             i = typeAliases.get(name, Integer.MIN_VALUE);
         }
-
+        
         return i;
     }
 

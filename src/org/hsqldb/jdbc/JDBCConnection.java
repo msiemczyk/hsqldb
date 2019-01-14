@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2017, The HSQL Development Group
+/* Copyright (c) 2001-2019, The HSQL Development Group
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,34 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-
 package org.hsqldb.jdbc;
 
+//#ifdef JAVA6
+import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.NClob;
 import java.sql.PreparedStatement;
-import java.sql.Savepoint;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
 import java.sql.Statement;
+import java.sql.Struct;
 import java.util.Calendar;
 import java.util.Map;
-
-//#ifdef JAVA6
-import java.sql.Array;
-import java.sql.NClob;
-import java.sql.SQLClientInfoException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLXML;
-import java.sql.Struct;
 import java.util.Properties;
 
-//#endif JAVA6
-//import java.util.logging.Level;
-// import java.util.logging.Logger;
-import org.hsqldb.DatabaseManager;
-import org.hsqldb.DatabaseURL;
 import org.hsqldb.ClientConnection;
 import org.hsqldb.ClientConnectionHTTP;
+//#endif JAVA6
+import org.hsqldb.DatabaseManager;
+import org.hsqldb.DatabaseURL;
 import org.hsqldb.HsqlDateTime;
 import org.hsqldb.HsqlException;
 import org.hsqldb.SessionInterface;
@@ -67,46 +62,12 @@ import org.hsqldb.Tokens;
 import org.hsqldb.error.Error;
 import org.hsqldb.error.ErrorCode;
 import org.hsqldb.lib.StringUtil;
-import org.hsqldb.persist.HsqlProperties;
 import org.hsqldb.persist.HsqlDatabaseProperties;
-import org.hsqldb.result.Result;
+import org.hsqldb.persist.HsqlProperties;
 import org.hsqldb.result.ResultConstants;
 import org.hsqldb.result.ResultProperties;
 import org.hsqldb.types.Type;
-
-//import java.sql.SQLData;
-//import java.sql.SQLOutput;
-//import java.sql.SQLInput;
-
-/* $Id$ */
-
-// fredt@users    20020320 - patch 1.7.0 - JDBC 2 support and error trapping
-//
-// campbell-burnet@users 20020509 - added "throws SQLException" to all methods where
-//                           it was missing here but specified in the
-//                           java.sql.Connection interface,
-//                           updated generic documentation to JDK 1.4, and
-//                           added JDBC3 methods and docs
-// boucherb &
-// fredt@users    20020505 - extensive review and update of docs and behaviour
-//                           to comply with java.sql specification
-// fredt@users    20020830 - patch 487323 by xclayl@users - better synchronization
-// fredt@users    20020930 - patch 1.7.1 - support for connection properties
-// kneedeepincode@users
-//                20021110 - patch 635816 - correction to properties
-// unsaved@users  20021113 - patch 1.7.2 - SSL support
-// campbell-burnet@users 2003 ??? - patch 1.7.2 - SSL support moved to factory interface
-// fredt@users    20030620 - patch 1.7.2 - reworked to use a SessionInterface
-// campbell-burnet@users 20030801 - JavaDoc updates to reflect new connection urls
-// campbell-burnet@users 20030819 - patch 1.7.2 - partial fix for broken nativeSQL method
-// campbell-burnet@users 20030819 - patch 1.7.2 - SQLWarning cases implemented
-// campbell-burnet@users 20051207 - 1.9.0       - JDBC 4.0 support - docs and methods
-//              - 20060712               - full synch up to Mustang Build 90
-// fredt@users    20090810 - 1.9.0       - full review and updates
-//
-// Revision 1.23  2006/07/12 12:02:43 boucherb
-// patch 1.9.0
-// - full synch up to Mustang b90
+import org.hsqldb.types.UserDefinedTypesProvider;
 
 /**
  * <!-- start generic documentation -->
@@ -754,7 +715,6 @@ public class JDBCConnection implements Connection {
         int          len     = sql.length();
         int          nest    = 0;
         StringBuffer sb      = null;
-        String       msg;
 
         //--
         final int outside_all                         = 0;
@@ -2138,7 +2098,6 @@ public class JDBCConnection implements Connection {
             Savepoint savepoint) throws SQLException {
 
         JDBCSavepoint sp;
-        Result        req;
 
         checkClosed();
 
@@ -3059,10 +3018,14 @@ public class JDBCConnection implements Connection {
 
         int typeCode = Type.getTypeNr(typeName);
 
+        if (typeCode == Integer.MIN_VALUE) {
+            typeCode = userDefinedTypesProvider.getTypeNr(typeName);
+        }
+       
         if (typeCode < 0) {
             throw JDBCUtil.invalidArgument(typeName);
         }
-
+        
         Type type = Type.getDefaultType(typeCode);
 
         if (type.isArrayType() || type.isLobType() || type.isRowType()) {
@@ -3406,7 +3369,6 @@ public class JDBCConnection implements Connection {
 
     /** Is this connection to a network server instance. */
     protected boolean isNetConn;
-
     /**
      * Is this connection closed?
      */
@@ -3417,6 +3379,8 @@ public class JDBCConnection implements Connection {
 
     /** Synchronizes concurrent modification of the warning chain */
     private final Object rootWarning_mutex = new Object();
+    
+    private final UserDefinedTypesProvider userDefinedTypesProvider = new UserDefinedTypesProvider(this);
 
     /** ID sequence for unnamed savepoints */
     private int savepointIDSequence;
